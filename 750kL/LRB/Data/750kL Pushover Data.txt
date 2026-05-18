@@ -1,0 +1,44 @@
+# ---------------------------------------------------
+# Rigid Diaphragm ON.
+# LRB is installed.
+# ---------------------------------------------------
+LeadRubberX element - Written by Manish Kumar, University at Buffalo, 2012
+Initial Time Periods: ['4.1828636815', '4.1828636815', '2.1130801378', '2.1130801378', '0.7813554156']
+
+--- Vertical Reactions after Gravity Analysis ---
+  Node 1001: Rz = +2285.8892 kN
+  Node 1002: Rz = +2285.8892 kN
+  Node 1003: Rz = +2285.8892 kN
+  Node 1004: Rz = +2285.8892 kN
+  Node 1005: Rz = +2285.8892 kN
+  Node 1006: Rz = +2285.8892 kN
+
+  Total Vertical Reaction = 13715.3354 kN
+
+Maximum Base Shear = 1029.64 kN
+Displacement at Maximum Base Shear = 479.55 mm
+Drift at Maximum Base Shear = 1.69 %
+
+
+# ----------------------------------------------------------------------------
+
+
+# ---------------------------------------------------
+# Rigid Diaphragm ON.
+# LRB is NOT installed.
+# ---------------------------------------------------
+Initial Time Periods: ['4.0536864223', '4.0536864223', '1.8229551183', '1.8229551183', '0.6179880543']
+
+--- Vertical Reactions after Gravity Analysis ---
+  Node 101: Rz = +2285.8892 kN
+  Node 102: Rz = +2285.8892 kN
+  Node 103: Rz = +2285.8892 kN
+  Node 104: Rz = +2285.8892 kN
+  Node 105: Rz = +2285.8892 kN
+  Node 106: Rz = +2285.8892 kN
+
+  Total Vertical Reaction = 13715.3354 kN
+
+Maximum Base Shear = 1468.74 kN
+Displacement at Maximum Base Shear = 331.75 mm
+Drift at Maximum Base Shear = 1.18 %
