@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Elevated Water Tank Model Viewer</title>
+    <!-- Google Fonts for professional UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #121214;
+            --bg-secondary: #1a1a1e;
+            --bg-tertiary: #26262b;
+            --accent: #00adb5;
+            --accent-hover: #008f95;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --success: #10b981;
+            --danger: #ef4444;
+            --sidebar-width: 360px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar Styling */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 4px 0 25px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .sidebar-content {
+            padding: 24px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            margin-bottom: 16px;
+            margin-top: 8px;
+        }
+
+        .control-group {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-row label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #d1d5db;
+        }
+
+        /* Custom Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #4b5563;
+            transition: .2s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        /* Custom Buttons */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            background-color: rgba(0, 173, 181, 0.05);
+        }
+
+        .btn.active {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* Info Panel Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .info-card {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .info-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .info-lbl {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* 3D Canvas Container */
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            height: 100%;
+            background-color: var(--bg-primary);
+        }
+
+        #view-axes {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 100px;
+            height: 100px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Tooltip Legend Overlay */
+        #legend-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(26, 26, 30, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Mobile sidebar toggle button */
+        #toggle-sidebar-btn {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                position: absolute;
+                left: 0; top: 0; bottom: 0;
+                transform: translateX(-100%);
+            }
+            #sidebar.open {
+                transform: translateX(0);
+            }
+            #toggle-sidebar-btn {
+                display: block;
+                position: absolute;
+                top: 20px; left: 20px;
+                z-index: 20;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                color: var(--text-main);
+                padding: 10px;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <button id="toggle-sidebar-btn">☰ Menu</button>
+
+    <!-- Sidebar Control Panel -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h1>Elevated Water Tank</h1>
+            <p>Interactive 3D OpenSeesPy Structural Model</p>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Model Rendering Options -->
+            <div class="section-title">Display Options</div>
+            <div class="control-group">
+                <div class="control-row">
+                    <label for="renderMode">Rendering Mode</label>
+                </div>
+                <div class="btn-grid">
+                    <button class="btn active" id="btn-extruded" onclick="setRenderMode('extruded')">Extruded Solid</button>
+                    <button class="btn" id="btn-wireframe" onclick="setRenderMode('wireframe')">Wireframe</button>
+                </div>
+                <div style="margin-top: 14px;" class="control-row">
+                    <label>Grid Floor</label>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-grid" checked onchange="toggleGrid(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Layer Visibility Toggles -->
+            <div class="section-title">Structural Components</div>
+            <div class="control-group">
+                <div class="control-row">
+                    <label>Columns (700x700mm)</label>
+                    <label class="switch">
+                        <input type="checkbox" id="layer-columns" checked onchange="toggleLayer('columns', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="control-row">
+                    <label>Staging Beams (400x500mm)</label>
+                    <label class="switch">
+                        <input type="checkbox" id="layer-staging-beams" checked onchange="toggleLayer('stagingBeams', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="control-row">
+                    <label>Tank Bottom Beams (600x800mm)</label>
+                    <label class="switch">
+                        <input type="checkbox" id="layer-tank-beams" checked onchange="toggleLayer('tankBeams', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="control-row">
+                    <label>Top Diaphragm Shell</label>
+                    <label class="switch">
+                        <input type="checkbox" id="layer-diaphragm" checked onchange="toggleLayer('diaphragm', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="control-row">
+                    <label>Mass Nodes & Links</label>
+                    <label class="switch">
+                        <input type="checkbox" id="layer-masses" checked onchange="toggleLayer('masses', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="control-row">
+                    <label>Base Isolators (LRB)</label>
+                    <label class="switch">
+                        <input type="checkbox" id="layer-lrb" onchange="toggleLRB(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Camera Presets -->
+            <div class="section-title">Camera Views</div>
+            <div class="control-group">
+                <div class="btn-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <button class="btn" onclick="setCameraView('iso')">Isometric</button>
+                    <button class="btn" onclick="setCameraView('front')">Front (X-Z)</button>
+                    <button class="btn" onclick="setCameraView('side')">Side (Y-Z)</button>
+                    <button class="btn" onclick="setCameraView('top')">Top (X-Y)</button>
+                </div>
+            </div>
+
+            <!-- Model Specifications Info Panel -->
+            <div class="section-title">Model Dimensions</div>
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-val">28.20 m</div>
+                    <div class="info-lbl">Staging Height</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-val">32.92 m</div>
+                    <div class="info-lbl">Total Height</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-val">3.735 m</div>
+                    <div class="info-lbl">Staging Radius (R)</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-val">9</div>
+                    <div class="info-lbl">Staging Floors</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-val">48</div>
+                    <div class="info-lbl">Total Columns</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-val">54</div>
+                    <div class="info-lbl">Total Beams</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D Viewport -->
+    <div id="canvas-container">
+        <!-- Color Legend Overlays -->
+        <div id="legend-overlay">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #4f46e5;"></div>
+                <span>Columns (700x700)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #f59e0b;"></div>
+                <span>Staging Beams (400x500)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #d946ef;"></div>
+                <span>Tank Beams (600x800)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #06b6d4; opacity: 0.6;"></div>
+                <span>Top Diaphragm Shell</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ef4444;"></div>
+                <span>Impulsive Mass (Node 10)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #3b82f6;"></div>
+                <span>Convective Mass (Node 12)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #10b981;"></div>
+                <span>Convective Spring</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Three.js and OrbitControls via unpkg/cdnjs CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- Structural Geometry Definitions (Converted from mm to meters) ---
+        const R = 3.735; 
+        const angles = [0, 60, 120, 180, 240, 300].map(deg => deg * Math.PI / 180);
+        const heights = [0, 4.0, 7.5, 11.0, 14.5, 18.0, 21.5, 25.0, 28.2];
+        const h_LRB = 0.2282; // LRB Total Height (228.2 mm)
+
+        // Color Palette
+        const colors = {
+            column: 0x4f46e5,
+            stagingBeam: 0xf59e0b,
+            tankBeam: 0xd946ef,
+            diaphragm: 0x06b6d4,
+            rigidLink: 0x374151,
+            spring: 0x10b981,
+            impulsiveMass: 0xef4444,
+            convectiveMass: 0x3b82f6,
+            lrb: 0x111827
+        };
+
+        // Three.js State Variables
+        let scene, camera, renderer, controls;
+        let gridHelper;
+        let renderMode = 'extruded'; // 'extruded' or 'wireframe'
+        
+        // Visibility groups/layers
+        const layers = {
+            columns: new THREE.Group(),
+            stagingBeams: new THREE.Group(),
+            tankBeams: new THREE.Group(),
+            diaphragm: new THREE.Group(),
+            masses: new THREE.Group(),
+            lrb: new THREE.Group()
+        };
+
+        // Node definitions for reference lookup
+        const structuralNodes = {};
+
+        // Mobile responsive layout trigger
+        const toggleBtn = document.getElementById('toggle-sidebar-btn');
+        const sidebar = document.getElementById('sidebar');
+        toggleBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+
+        // Initialize WebGL Application
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // 1. Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x121214);
+
+            // 2. Camera setup
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            
+            // 3. Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // 4. Controls setup
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.1; // Don't go deep below floor ground
+
+            // 5. Lighting environment
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight1.position.set(20, 40, 20);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+            dirLight2.position.set(-20, 20, -20);
+            scene.add(dirLight2);
+
+            // 6. Add Reference Floor Grid
+            gridHelper = new THREE.GridHelper(30, 30, 0x00adb5, 0x2d3748);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+
+            // 7. Initialize and Add groups to scene
+            Object.keys(layers).forEach(key => scene.add(layers[key]));
+
+            // Build structural entities
+            generateModelData();
+            buildStructure();
+
+            // Set default view configuration
+            setCameraView('iso');
+
+            // Handle window resizing
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function generateModelData() {
+            // Generate nodes across levels
+            heights.forEach((h, floorIdx) => {
+                const floorNum = floorIdx + 1;
+                angles.forEach((ang, nodeIdx) => {
+                    const nodeTag = floorNum * 100 + (nodeIdx + 1);
+                    const x = R * Math.cos(ang);
+                    const z = R * Math.sin(ang); // In Three.js, Y is vertical, so structural Z maps to Three's Y, structural Y to Three's Z
+                    structuralNodes[nodeTag] = new THREE.Vector3(x, h, z);
+                });
+            });
+        }
+
+        // Helper framework to draw members between coordinate endpoints
+        function createStructuralMember(p1, p2, w, d, color, group, isWireframe) {
+            const distance = p1.distanceTo(p2);
+            
+            let mesh;
+            if (isWireframe) {
+                // Line asset representation
+                const geometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+                const material = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
+                mesh = new THREE.Line(geometry, material);
+            } else {
+                // Extruded 3D Volumetric Object Box representation
+                const geometry = new THREE.BoxGeometry(w, w, distance);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: color, 
+                    roughness: 0.4, 
+                    metalness: 0.1,
+                    flatShading: true
+                });
+                mesh = new THREE.Mesh(geometry, material);
+                
+                // Align mesh along standard axis pathing
+                mesh.position.copy(p1).add(p2).multiplyScalar(0.5);
+                mesh.lookAt(p2);
+                
+                // Scale cross sections explicitly
+                mesh.scale.set(w / w, d / w, 1);
+            }
+            group.add(mesh);
+        }
+
+        function buildStructure() {
+            const isWire = (renderMode === 'wireframe');
+
+            // Clear existing groups prior to rebuilding elements
+            Object.keys(layers).forEach(key => {
+                // Keep LRB configuration status independent unless updated
+                if (key !== 'lrb' || layers.lrb.children.length > 0) {
+                    clearGroup(layers[key]);
+                }
+            });
+
+            // 1. Draw Columns (700mm x 700mm structural cross sections)
+            const colSize = 0.7;
+            for (let f = 1; f < heights.length; f++) {
+                for (let n = 1; n <= 6; n++) {
+                    const bottomNode = f * 100 + n;
+                    const topNode = (f + 1) * 100 + n;
+                    createStructuralMember(
+                        structuralNodes[bottomNode], 
+                        structuralNodes[topNode], 
+                        colSize, colSize, colors.column, layers.columns, isWire
+                    );
+                }
+            }
+
+            // 2. Draw Beams
+            for (let f = 1; f <= heights.length; f++) {
+                const isTopFloor = (f === heights.length);
+                const bW = isTopFloor ? 0.6 : 0.4;
+                const bD = isTopFloor ? 0.8 : 0.5;
+                const targetColor = isTopFloor ? colors.tankBeam : colors.stagingBeam;
+                const targetLayer = isTopFloor ? layers.tankBeams : layers.stagingBeams;
+
+                for (let n = 1; n <= 6; n++) {
+                    const nodeStart = f * 100 + n;
+                    const nodeEnd = f * 100 + (n % 6 + 1);
+                    createStructuralMember(
+                        structuralNodes[nodeStart], 
+                        structuralNodes[nodeEnd], 
+                        bW, bD, targetColor, targetLayer, isWire
+                    );
+                }
+            }
+
+            // 3. Draw Top Rigid Diaphragm Plate (Floor 9)
+            if (!isWire) {
+                const shape = new THREE.Shape();
+                angles.forEach((ang, idx) => {
+                    const x = R * Math.cos(ang);
+                    const z = R * Math.sin(ang);
+                    if (idx === 0) shape.moveTo(x, z);
+                    else shape.lineTo(x, z);
+                });
+                shape.closePath();
+
+                const diagGeo = new THREE.ShapeGeometry(shape);
+                // Rotate to match horizontal placement vector plane
+                diagGeo.rotateX(Math.PI / 2);
+                const diagMat = new THREE.MeshStandardMaterial({
+                    color: colors.diaphragm,
+                    transparent: true,
+                    opacity: 0.5,
+                    side: THREE.DoubleSide
+                });
+                const diaphragmMesh = new THREE.Mesh(diagGeo, diagMat);
+                diaphragmMesh.position.y = heights[heights.length - 1];
+                layers.diaphragm.add(diaphragmMesh);
+            } else {
+                // Add center cross alignment lines for wireframe mode visibility
+                const centerTop = new THREE.Vector3(0, heights[heights.length - 1], 0);
+                for (let n = 1; n <= 6; n++) {
+                    const nodePtr = heights.length * 100 + n;
+                    const geometry = new THREE.BufferGeometry().setFromPoints([centerTop, structuralNodes[nodePtr]]);
+                    const material = new THREE.LineBasicMaterial({ color: colors.diaphragm, opacity: 0.6 });
+                    layers.diaphragm.add(new THREE.Line(geometry, material));
+                }
+            }
+
+            // 4. Hydrodynamic Lumped Mass Configurations & Springs
+            const zTop = heights[heights.length - 1];
+            const pCenter9 = new THREE.Vector3(0, zTop, 0);
+            const pImpulsive = new THREE.Vector3(0, zTop + 2.995, 0);
+            const pConvective = new THREE.Vector3(0, zTop + 4.7202, 0);
+
+            // Rigid Link element mapping
+            const linkGeo = new THREE.BufferGeometry().setFromPoints([pCenter9, pImpulsive]);
+            const linkMat = new THREE.LineBasicMaterial({ color: colors.rigidLink, transform: true, linewidth: 4 });
+            layers.masses.add(new THREE.Line(linkGeo, linkMat));
+
+            // Lumped Mass node spheres
+            if (!isWire) {
+                const massGeo = new THREE.SphereGeometry(0.3, 32, 32);
+                
+                const impMat = new THREE.MeshStandardMaterial({ color: colors.impulsiveMass });
+                const impMesh = new THREE.Mesh(massGeo, impMat);
+                impMesh.position.copy(pImpulsive);
+                layers.masses.add(impMesh);
+
+                const convMat = new THREE.MeshStandardMaterial({ color: colors.convectiveMass });
+                const convMesh = new THREE.Mesh(massGeo, convMat);
+                convMesh.position.copy(pConvective);
+                layers.masses.add(convMesh);
+            } else {
+                // Display cross markers for points inside wireframe scheme
+                layers.masses.add(createWireSphereMarker(pImpulsive, 0.3, colors.impulsiveMass));
+                layers.masses.add(createWireSphereMarker(pConvective, 0.3, colors.convectiveMass));
+            }
+
+            // Render Sloshing Convective Spring Helix
+            const springCoils = 7;
+            const springRadius = 0.4;
+            const springPoints = [];
+            const segments = 150;
+            for (let i = 0; i <= segments; i++) {
+                const t = (i / segments) * (springCoils * 2 * Math.PI);
+                const x = springRadius * Math.cos(t);
+                const z = springRadius * Math.sin(t);
+                const y = pImpulsive.y + (pConvective.y - pImpulsive.y) * (i / segments);
+                springPoints.push(new THREE.Vector3(x, y, z));
+            }
+            const springCurve = new THREE.CatmullRomCurve3(springPoints);
+            
+            if (!isWire) {
+                const springGeo = new THREE.TubeGeometry(springCurve, 100, 0.05, 8, false);
+                const springMat = new THREE.MeshStandardMaterial({ color: colors.spring, roughness: 0.2 });
+                layers.masses.add(new THREE.Mesh(springGeo, springMat));
+            } else {
+                const springGeo = new THREE.BufferGeometry().setFromPoints(springPoints);
+                const springMat = new THREE.LineBasicMaterial({ color: colors.spring });
+                layers.masses.add(new THREE.Line(springGeo, springMat));
+            }
+
+            // 5. Build dynamic Base Isolator units if toggle checked
+            buildLRBIsolators(isWire);
+        }
+
+        function buildLRBIsolators(isWire) {
+            clearGroup(layers.lrb);
+            const lrbToggle = document.getElementById('layer-lrb').checked;
+            if (!lrbToggle) return;
+
+            angles.forEach((ang, idx) => {
+                const nodeF1 = 100 + (idx + 1);
+                const pTop = structuralNodes[nodeF1];
+                const pBot = new THREE.Vector3(pTop.x, pTop.y - h_LRB, pTop.z);
+
+                if (!isWire) {
+                    // Render realistic layered elastomeric/lead-rubber assembly model
+                    const bearingGeo = new THREE.CylinderGeometry(0.4, 0.4, h_LRB, 32);
+                    const bearingMat = new THREE.MeshStandardMaterial({ 
+                        color: colors.lrb, 
+                        roughness: 0.7, 
+                        metalness: 0.2 
+                    });
+                    const lrbMesh = new THREE.Mesh(bearingGeo, bearingMat);
+                    lrbMesh.position.copy(pTop).add(pBot).multiplyScalar(0.5);
+                    layers.lrb.add(lrbMesh);
+                } else {
+                    const geometry = new THREE.BufferGeometry().setFromPoints([pTop, pBot]);
+                    const material = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 });
+                    layers.lrb.add(new THREE.Line(geometry, material));
+                }
+            });
+        }
+
+        function createWireSphereMarker(pos, radius, color) {
+            const geometry = new THREE.BufferGeometry();
+            const points = [];
+            for (let i = 0; i <= 32; i++) {
+                const theta = (i / 32) * 2 * Math.PI;
+                points.push(new THREE.Vector3(pos.x + radius * Math.cos(theta), pos.y, pos.z + radius * Math.sin(theta)));
+            }
+            geometry.setFromPoints(points);
+            return new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: color }));
+        }
+
+        function clearGroup(group) {
+            while (group.children.length > 0) {
+                const obj = group.children[0];
+                group.remove(obj);
+            }
+        }
+
+        // --- Interaction UI Engine Functions ---
+        function setRenderMode(mode) {
+            renderMode = mode;
+            document.getElementById('btn-extruded').classList.toggle('active', mode === 'extruded');
+            document.getElementById('btn-wireframe').classList.toggle('active', mode === 'wireframe');
+            buildStructure();
+        }
+
+        function toggleGrid(visible) {
+            gridHelper.visible = visible;
+        }
+
+        function toggleLayer(layerName, visible) {
+            if (layers[layerName]) {
+                layers[layerName].visible = visible;
+            }
+        }
+
+        function toggleLRB(enabled) {
+            buildStructure();
+        }
+
+        function setCameraView(view) {
+            const target = new THREE.Vector3(0, heights[heights.length - 1] / 2, 0);
+            controls.target.copy(target);
+            
+            switch(view) {
+                case 'iso':
+                    camera.position.set(18, heights[heights.length - 1] + 8, 22);
+                    break;
+                case 'front':
+                    camera.position.set(0, heights[heights.length - 1] / 2, 30);
+                    break;
+                case 'side':
+                    camera.position.set(30, heights[heights.length - 1] / 2, 0);
+                    break;
+                case 'top':
+                    camera.position.set(0, heights[heights.length - 1] + 15, 0.01);
+                    break;
+            }
+            controls.update();
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
